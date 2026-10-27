@@ -45,6 +45,7 @@ async function exists(path) {
 
 const REQUIRED = [
   'SKILL.md',
+  'SKILL.en.md',
   'references/requirements.md',
   'references/ui-design.md',
   'references/security-audit.md',
@@ -118,6 +119,54 @@ if (frontmatter === null) {
 }
 
 /* ------------------------------------------------------------------ *
+ * 2b. 英文版 SKILL.en.md
+ * ------------------------------------------------------------------ */
+
+let skillEnText = ''
+try {
+  skillEnText = await readFile(join(skillRoot, 'SKILL.en.md'), 'utf8')
+} catch (error) {
+  fail('读取 SKILL.en.md', error.message)
+}
+
+if (skillEnText !== '') {
+  const enFrontmatter = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/.exec(skillEnText)
+  if (enFrontmatter === null) {
+    fail('SKILL.en.md frontmatter', '缺少 --- 包裹的 YAML 头')
+  } else {
+    const block = enFrontmatter[1]
+    const nameMatch = /^name:\s*(.+)$/m.exec(block)
+    const descMatch = /^description:\s*(.+)$/m.exec(block)
+
+    if (nameMatch === null) fail('SKILL.en.md name', '缺失')
+    else if (nameMatch[1].trim() !== 'plugin-builder') fail('SKILL.en.md name', `应与 SKILL.md 一致（plugin-builder），实际 ${nameMatch[1].trim()}`)
+    else pass('SKILL.en.md name', 'plugin-builder')
+
+    if (descMatch === null) fail('SKILL.en.md description', '缺失')
+    else {
+      const desc = descMatch[1].trim()
+      if (desc.length < 40) fail('SKILL.en.md description', `过短（${desc.length} 字符）`)
+      else if (desc.length > 1024) fail('SKILL.en.md description', `过长（${desc.length} 字符）`)
+      else pass('SKILL.en.md description', `${desc.length} 字符`)
+      if (!/DSH|plugin/i.test(desc)) fail('SKILL.en.md description 内容', '未说明适用于 DSH 插件任务')
+      else pass('SKILL.en.md description 内容', '含 DSH/plugin 关键词')
+    }
+  }
+
+  // 两个版本必须覆盖同样的顶层章节（## 0 … ## 17），避免英文版漏章
+  const sections = (text) => new Set([...text.matchAll(/^##\s+(\d+(?:\.\d+)?)\s/gm)].map((m) => m[1]))
+  const zhSections = sections(skillText)
+  const enSections = sections(skillEnText)
+  const missing = [...zhSections].filter((n) => !enSections.has(n))
+  if (missing.length === 0) pass('SKILL.en.md 章节与中文版对齐', `${enSections.size} 个顶层章节`)
+  else fail('SKILL.en.md 章节与中文版对齐', `缺少章节：${missing.join(', ')}`)
+
+  // 英文版必须指向中文原版，中文版 README 必须给出英文入口
+  if (/SKILL\.md/.test(skillEnText)) pass('SKILL.en.md 回链中文版')
+  else fail('SKILL.en.md 回链中文版', '未提到 SKILL.md')
+}
+
+/* ------------------------------------------------------------------ *
  * 3. 关键规则必须写进 SKILL.md
  * ------------------------------------------------------------------ */
 
@@ -150,14 +199,22 @@ for (const rel of RESOURCE_FILES) {
   else fail(`SKILL.md 引用：${rel}`, '文件存在但 SKILL.md 未提及，运行时不会读到')
 }
 
-// 4b. SKILL.md 里出现的 references/ 或 templates/ 相对路径都应真实存在
-const mentioned = new Set()
-for (const match of skillText.matchAll(/(?:references|templates)\/[A-Za-z0-9._/-]+/g)) {
-  mentioned.add(match[0].replace(/[.),。；、]+$/, ''))
+// 4a-2. 英文版同样要覆盖所有 reference/template，否则读英文版会漏掉资源
+for (const rel of RESOURCE_FILES) {
+  if (skillEnText.includes(rel)) pass(`SKILL.en.md 引用：${rel}`)
+  else fail(`SKILL.en.md 引用：${rel}`, '英文版未提及该文件，与中文版不对齐')
 }
-for (const rel of mentioned) {
-  if (await exists(join(skillRoot, rel))) pass(`路径存在：${rel}`)
-  else fail(`路径存在：${rel}`, 'SKILL.md 提到但文件不存在（死链）')
+
+// 4b. 两版 SKILL 里出现的 references/ 或 templates/ 相对路径都应真实存在
+for (const [label, text] of [['SKILL.md', skillText], ['SKILL.en.md', skillEnText]]) {
+  const mentioned = new Set()
+  for (const match of text.matchAll(/(?:references|templates)\/[A-Za-z0-9._/-]+/g)) {
+    mentioned.add(match[0].replace(/[.),。；、]+$/, ''))
+  }
+  for (const rel of mentioned) {
+    if (await exists(join(skillRoot, rel))) pass(`路径存在（${label}）：${rel}`)
+    else fail(`路径存在（${label}）：${rel}`, '提到的路径不存在（死链）')
+  }
 }
 
 /* ------------------------------------------------------------------ *
@@ -197,6 +254,24 @@ try {
   else fail('audit-scan 导出 scanDirectory', '未导出')
 } catch (error) {
   fail('audit-scan 导出 scanDirectory', error.message)
+}
+
+/* ------------------------------------------------------------------ *
+ * 6. README 的双语入口
+ * ------------------------------------------------------------------ */
+
+let readmeText = ''
+try {
+  readmeText = await readFile(join(skillRoot, 'README.md'), 'utf8')
+} catch (error) {
+  fail('读取 README.md', error.message)
+}
+
+if (readmeText !== '') {
+  if (readmeText.includes('SKILL.en.md')) pass('README 链接英文版')
+  else fail('README 链接英文版', 'README.md 未给出 SKILL.en.md 入口')
+  if (skillEnText.includes('SKILL.md')) pass('SKILL.en.md 链接中文版')
+  else fail('SKILL.en.md 链接中文版', '英文版未回链中文版')
 }
 
 /* ------------------------------------------------------------------ *

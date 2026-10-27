@@ -2,17 +2,17 @@
 
 | 项 | 值 |
 |---|---|
-| 项目版本 | `0.1.0`（初始版本，未打 tag） |
-| 审计日期 | 2026-10-23 |
+| 项目版本 | `0.2.0`（新增英文版 `SKILL.en.md`；`0.1.0` 为初始版本） |
+| 审计日期 | 2026-10-23（初版）；2026-10-27（英文版增量复审） |
 | 审计环境 | DSH `0.2.1-rc.2`，Node `v24.17.0`，Windows |
-| 审计范围 | 仓库内全部文件（`SKILL.md`、`references/`、`templates/`、`scripts/`、`README.md`、`LICENSE`），共 26 个文件 |
+| 审计范围 | 仓库内全部文件（`SKILL.md`、`SKILL.en.md`、`references/`、`templates/`、`scripts/`、`README.md`、`LICENSE`），共 28 个文件 |
 | 扫描命令 | `node scripts/audit-scan.mjs .` |
 
 ## 结论
 
 **可安全交付。**
 
-无高危项；16 项中危与 3 项提示经逐条人工复核，全部为本仓库的固有特征（本仓库是 Skill 而非插件 bundle；文档中包含"要被检测的路径与危险写法"示例；测试夹具包含刻意的危险代码用于验证检测能力），**无一为真实凭据、真实隐私数据或真实安全缺陷**。
+无高危项；26 项中危与 4 项提示经逐条人工复核，全部为本仓库的固有特征（本仓库是 Skill 而非插件 bundle；文档中包含"要被检测的路径与危险写法"示例；测试夹具包含刻意的危险代码用于验证检测能力），**无一为真实凭据、真实隐私数据或真实安全缺陷**。
 
 ## 检查项
 
@@ -44,6 +44,8 @@
 | M-5 | `scripts/audit-scan.mjs:137,143` | 命中"本地绝对路径" | **接受**：这是扫描器自身的**检测正则**，即规则定义本身 |
 | M-6 | `scripts/audit-scan.test.mjs:110,115,121,188` | 命中绝对路径、`innerHTML`、`eval` | **接受**：测试夹具，用于验证扫描器能检出这些模式；假凭据在运行时拼接，源码中无真实凭据 |
 | M-7 | `scripts/check-project.mjs:85` | 命中 `new Function(` | **接受**：降级语法校验路径。已在代码注释中说明用途；输入为本地文件内容，非外部输入；`vm.SourceTextModule` 可用时不会走到该分支 |
+| M-8 | `SKILL.md:426,562`、`SKILL.en.md:428,564` | 命中"本地绝对路径" | **接受**：发布前自查清单与"常见失败模式"在示范**要禁止的写法**，写的是 `C:\Users\<me>\`、`/home/...` 占位形式，不含真实用户名 |
+| M-9 | `scripts/check-project.test.mjs:174` | 命中"本地绝对路径" | **接受**：测试夹具，用于验证路径相关检查，路径为虚构值 |
 
 ### 低 / 提示
 
@@ -56,7 +58,7 @@
 
 | # | 原状态 | 修复方式 | 复扫结果 |
 |---|---|---|---|
-| 1 | `references/scenarios.md` 示例路径含真实用户名 `C:\Users\Acer\...` | 改为 `C:\Users\<name>\...` 占位符 | 已清零 |
+| 1 | `references/scenarios.md` 示例路径含真实用户名（`C:\Users\<本机用户名>\...`） | 改为 `C:\Users\<name>\...` 占位符 | 已清零 |
 | 2 | 测试夹具曾直接写死假 API Key 与私钥字面量 | 改为运行时字符串拼接生成 | 已降级为提示 |
 | 3 | `check-project.mjs` 与 `audit-scan.mjs` 曾用 `child_process` 做语法检查，在受限沙箱触发 `spawn EPERM` | 改为进程内实现（`vm.SourceTextModule`，不可用时如实报"无法校验"） | 已修复，测试全通过 |
 
@@ -87,8 +89,8 @@
 
 ```text
 $ node scripts/audit-scan.mjs .
-扫描文件：26
-高危：0    中危：16    提示：3
+扫描文件：28
+高危：0    中危：26    提示：4
 ```
 
 中危与提示项均已在上文逐条登记并说明接受理由。
@@ -98,7 +100,7 @@ $ node scripts/audit-scan.mjs .
 - **已实际运行并通过**
   - `node scripts/audit-scan.test.mjs` → 19 / 19 通过
   - `node scripts/check-project.test.mjs` → 20 / 20 通过
-  - `node scripts/self-check.mjs` → 58 / 58 通过
+  - `node scripts/self-check.mjs` → 85 / 85 通过（含中英双版一致性检查）
 - **仅静态检查**：`references/*.md`、`templates/*.md` 为文档，只做人工审阅与引用完整性检查（由 `self-check.mjs` 校验无死链）。
 - **尚未验证**
   - 本 Skill 未用于完整交付过一个真实 DSH 插件，端到端流程衔接未经实机验证。
@@ -107,4 +109,4 @@ $ node scripts/audit-scan.mjs .
 
 ## 审计人
 
-DeepSeek Harness Agent，2026-10-23。本报告基于上述范围内的文件；范围外的改动不在此报告覆盖之内。
+DeepSeek Harness Agent，2026-10-23 初版；2026-10-27 英文版增量复审。本报告基于上述范围内的文件；范围外的改动不在此报告覆盖之内。

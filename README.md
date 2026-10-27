@@ -1,8 +1,10 @@
 # plugin-builder
 
+**中文** | [English edition](SKILL.en.md)
+
 一个用于 **DeepSeek Harness（DSH）插件开发**的全流程 Skill：把一个"我想做个插件"的想法，变成结构完整、经过测试与安全审计、可直接交付的插件项目。
 
-> 状态：**39 项脚本测试 + 58 项自检全部通过**，Skill 已在真实 DSH 会话中加载使用。
+> 状态：**39 项脚本测试 + 85 项自检全部通过**，Skill 已在真实 DSH 会话中加载使用。
 > **尚未**用它完整走完一个插件从需求到交付的全流程，因此端到端效果未经实机验证（见「已知限制」）。
 
 它**不会**替你安装、启用、上传或发布任何东西。默认交付即停，环境修改必须单独授权。
@@ -50,7 +52,8 @@
 
 ```text
 plugin-builder/
-├── SKILL.md                              核心流程、边界规则、交付格式
+├── SKILL.md                              核心流程、边界规则、交付格式（中文版）
+├── SKILL.en.md                           同一份说明的英文版（English edition）
 ├── references/
 │   ├── dsh-plugin-api.md                 已核实的 DSH 插件 API 契约 + 待验证清单
 │   ├── requirements.md                   P0/P1/P2 提问策略与选项写法
@@ -138,7 +141,7 @@ node scripts/self-check.mjs
 ```powershell
 node scripts/audit-scan.test.mjs     # 19 项：规则命中、占位符降级、退出码、脱敏、结构检查
 node scripts/check-project.test.mjs  # 20 项：命名、patch、入口导出、Client id、locale、图标、语法
-node scripts/self-check.mjs          # 58 项：本 Skill 完整性
+node scripts/self-check.mjs          # 85 项：本 Skill 完整性（含中英双版一致性）
 ```
 
 测试直接执行 `node <file>`，不需要 `node --test`——某些受限沙箱里测试 runner 会因为 `spawn EPERM` 失败，而这些测试在设计上就不启动子进程。
