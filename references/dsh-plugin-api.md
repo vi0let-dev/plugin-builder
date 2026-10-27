@@ -2,7 +2,7 @@
 
 本文件记录**动手写代码前需要知道的事实**。全部标注来源与核实方式，方便你在新版本上重新判断是否仍然成立。
 
-核实环境：DSH `0.2.1-rc.2`，profile `desktop`，Web GUI，2026-10-23。
+核实环境：DSH `0.2.1-rc.2`，profile `<profile>`（默认 profile），Web GUI，2026-10-23。
 核实方式：`cordis_inspect_query`（Config / Service / Slots / Theme）、已安装包 README、`dsh --help`、本机已安装插件源码。
 
 > 升级后必须重新核对标记为「版本敏感」的条目。任何拿不准的东西标「待验证」，不要写进交付代码还宣称可用。
